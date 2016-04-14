@@ -27,8 +27,23 @@ Servo servothumb,
       servowrist;
 
 //const int numReadings = 30;
-const int sampleWindow = 150; // Sample window width in mS (50 mS = 20Hz)
-unsigned int sample;
+const int SAMPLE_WINDOW = 150; // Sample window width in mS (50 mS = 20Hz)
+
+/** 
+ *  Holds sample data from each channel and saves maximum and minimum values
+ */
+unsigned int handFlex,
+             handFlexMax = 0,
+             handFlexMin = 1024,
+             handFlexPeak = 0,
+             handExtend,
+             handExtendMax = 0,
+             handExtendMin = 1024,
+             handExtendPeak = 0,
+             wrist,
+             wristMax = 0,
+             wristMin = 1024,
+             wristPeak = 0;
 
 //int readings[numReadings];      // the readings from the analog input
 //int index = 0;                  // the index of the current reading
@@ -52,42 +67,56 @@ void setup() {
 void loop() {
 
   unsigned long startMillis = millis(); // Start of sample window
-  unsigned int peakToPeak = 0;   // peak-to-peak level
-  unsigned int signalMax = 0;
-  unsigned int signalMin = 1024;
+  /*unsigned int peakToPeak = 0;   // peak-to-peak level
+   * 
+   */
   unsigned int servo = 0;
   unsigned int val = 0;
   unsigned int val2 = 0;
 
   // collect data for 50 mS
-  while (millis() - startMillis < sampleWindow)
+  while (millis() - startMillis < SAMPLE_WINDOW)
   {
-    sample = analogRead(1);
-    if (sample < 1024)  // toss out spurious readings
+    //TODO: confirm pinouts
+    handFlex = analogRead(1);
+    handExtend = analogRead(2);
+    wrist = analogRead(0);
+    checkAmplitude(handFlex, handFlexMax, handFlexMin);
+    checkAmplitude(handExtend, handExtendMax, handExtendMin);
+    checkAmplitude(wrist, wristMax, wristMin);
+    /*if (handFlex < 1024)  // toss out spurious readings
     {
-      if (sample > signalMax)
+      if (handFlex > signalMax)
       {
-        signalMax = sample;  // save just the max levels
+        signalMax = handFlex;  // save just the max levels
       }
-      else if (sample < signalMin)
+      else if (handFlex < signalMin)
       {
-        signalMin = sample;  // save just the min levels
+        signalMin = handFlex;  // save just the min levels
       }
-    }
+    }*/
   }
 
-  Serial.print(" MAX: ");
+  /*Serial.print(" MAX: ");
   Serial.print(signalMax);
   Serial.print(" MIN: ");
   Serial.print(signalMin);
+  */
+  /*
   peakToPeak = signalMax - signalMin;  // max - min = peak-peak amplitude
-  Serial.print(" peak-peak:  ");
+  */
+  peakToPeak(handFlexPeak, handFlexMax, handFlexMin);
+  peakToPeak(handExtendPeak, handExtendMax, handExtendMin);
+  peakToPeak(wristPeak, wristMax, wristMin);
+  /*Serial.print(" peak-peak:  ");
   Serial.print(peakToPeak);
+  */
   //  double volts = (peakToPeak * 3.3) / 1024;  // convert to volts
 
-  val = map(peakToPeak, 0, 1023, 1024, 0 );    // invert range
-  Serial.print(" val:  ");
+  val = map(handFlexPeak, 0, 1023, 1024, 0 );    // invert range
+  /*Serial.print(" val:  ");
   Serial.print(val);
+  */
   val2 = map(val, 0, 1023, 0, 180 );            // maps current range to what we want
   //  val = map(val, signalMin, signalMax, 0, 180 );
   //   val = val/ 5.5;
@@ -102,5 +131,29 @@ void loop() {
   servomajeure.write(val2);
   servoringfinger.write(val2);
   servopinky.write(val2);
+}
+
+/**
+ * Checks amplitude of input signal and records maximum and minimum values
+ */
+void checkAmplitude(unsigned int value, unsigned int max, unsigned int min){
+  if (value < 1024)  // toss out spurious readings
+    {
+      if (value > max)
+      {
+        max = value;  // save just the max levels
+      }
+      else if (value < min)
+      {
+        min = value;  // save just the min levels
+      }
+    }
+}
+
+/**
+ * Checks amplitude of input signal and records maximum and minimum values
+ */
+void peakToPeak(unsigned int range, unsigned int max, unsigned int min){
+  range = max - min;  // max - min = peak-peak amplitude
 }
 
