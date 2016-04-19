@@ -73,17 +73,17 @@ void loop() {
   /*unsigned int peakToPeak = 0;   // peak-to-peak level
   */
 
- handFlex = 0;
  handFlexMax = 0;
  handFlexMin = 1024;
  handFlexPeak = 0;
  handFlexMap = 0;
- handExtend = 0;
+ 
  handExtendMax = 0;
  handExtendMin = 1024;
  handExtendPeak = 0;
  handExtendMap = 0;
  wristRotation = 0;
+ 
  wristMax = 0;
  wristMin = 1024;
  wristPeak = 0;
@@ -99,17 +99,6 @@ void loop() {
     checkAmplitude(handFlex, handFlexMax, handFlexMin);
     checkAmplitude(handExtend, handExtendMax, handExtendMin);
     checkAmplitude(wristRotation, wristMax, wristMin);
-    /*if (handFlex < 1024)  // toss out spurious readings
-      {
-      if (handFlex > signalMax)
-      {
-        signalMax = handFlex;  // save just the max levels
-      }
-      else if (handFlex < signalMin)
-      {
-        signalMin = handFlex;  // save just the min levels
-      }
-      }*/
   }
 
   /*Serial.print(" MAX: ");
@@ -156,7 +145,7 @@ void loop() {
 /**
    Checks amplitude of input signal and records maximum and minimum values
 */
-void checkAmplitude(unsigned int value, unsigned int maxValue, unsigned int minValue) {
+void checkAmplitude(unsigned int value, unsigned int &maxValue, unsigned int &minValue) {
   if (value < 1024)  // toss out spurious readings
   {
     if (value > maxValue)
@@ -186,6 +175,8 @@ unsigned int mapValues(unsigned int range) {
   unsigned int theMap = map(newMap, 0, 1023, 0, 180 );            // maps current range to what we want
   if (theMap > 180) {
     theMap = 180;
+  }else if (theMap < 0){
+    theMap = 0;
   }
   return theMap;
 }
