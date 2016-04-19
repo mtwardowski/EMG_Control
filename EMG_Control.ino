@@ -71,8 +71,23 @@ void loop() {
 
   unsigned long startMillis = millis(); // Start of sample window
   /*unsigned int peakToPeak = 0;   // peak-to-peak level
-
   */
+
+ handFlex = 0;
+ handFlexMax = 0;
+ handFlexMin = 1024;
+ handFlexPeak = 0;
+ handFlexMap = 0;
+ handExtend = 0;
+ handExtendMax = 0;
+ handExtendMin = 1024;
+ handExtendPeak = 0;
+ handExtendMap = 0;
+ wristRotation = 0;
+ wristMax = 0;
+ wristMin = 1024;
+ wristPeak = 0;
+ wristMap = 0;
 
   // collect data for 50 mS
   while (millis() - startMillis < SAMPLE_WINDOW)
@@ -141,16 +156,16 @@ void loop() {
 /**
    Checks amplitude of input signal and records maximum and minimum values
 */
-void checkAmplitude(unsigned int value, unsigned int max, unsigned int min) {
+void checkAmplitude(unsigned int value, unsigned int maxValue, unsigned int minValue) {
   if (value < 1024)  // toss out spurious readings
   {
-    if (value > max)
+    if (value > maxValue)
     {
-      max = value;  // save just the max levels
+      maxValue = value;  // save just the max levels
     }
-    else if (value < min)
+    else if (value < minValue)
     {
-      min = value;  // save just the min levels
+      minValue = value;  // save just the min levels
     }
   }
 }
@@ -158,8 +173,8 @@ void checkAmplitude(unsigned int value, unsigned int max, unsigned int min) {
 /**
    Finds the Peak to Peak voltage
 */
-unsigned int peakToPeak(unsigned int max, unsigned int min) {
-  unsigned int range = max - min;  // max - min = peak-peak amplitude
+unsigned int peakToPeak(unsigned int maxValue, unsigned int minValue) {
+  unsigned int range = maxValue - minValue;  // max - min = peak-peak amplitude
   return range;
 }
 
