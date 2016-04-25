@@ -17,21 +17,31 @@ Servo firstPhalange,
 /**
     Holds sample data from each channel and saves maximum and minimum values
 */
-unsigned int handFlex,
-             handFlexMax = 0,
+unsigned int handFlexMax = 0,
              handFlexMin = 1024,
              handFlexPeak = 0,
              handFlexMap = 0,
-             handExtend,
              handExtendMax = 0,
              handExtendMin = 1024,
              handExtendPeak = 0,
              handExtendMap = 0,
-             wristRotation,
              wristMax = 0,
              wristMin = 1024,
              wristPeak = 0,
              wristMap = 0;
+
+/**
+ * Arrays for holding data
+ */
+unsigned int handFlex[5],
+               handExtend[5],
+               wristRotation[5];
+
+/**
+ * data index
+ */
+unsigned int dataIndex = 0;
+               
 
 /**
  * Sample Period in mS
@@ -62,26 +72,11 @@ void setup() {
 
 void loop() {
 
-  handFlexMax = 0;
-  handFlexMin = 1024;
-  handFlexPeak = 0;
-  handFlexMap = 0;
-  
-  handExtendMax = 0;
-  handExtendMin = 1024;
-  handExtendPeak = 0;
-  handExtendMap = 0;
-  wristRotation = 0;
-  
-  wristMax = 0;
-  wristMin = 1024;
-  wristPeak = 0;
-  wristMap = 0;
-
   if(cycleCheck(&lastSampleTime, SAMPLE_PERIOD)){
     sampleData();
   }
-  
+
+  /*
   checkAmplitude(handFlex, handFlexMax, handFlexMin);
   checkAmplitude(handExtend, handExtendMax, handExtendMin);
   checkAmplitude(wristRotation, wristMax, wristMin);
@@ -93,9 +88,18 @@ void loop() {
   handFlexMap = mapValues(handFlexPeak);
   handExtendMap = mapValues(handExtendPeak);
   wristMap = mapValues(wristPeak);
+  */
   
   if(cycleCheck(&lastServoUpdateTime, SERVO_INTERVAL)){
-    moveServos();
+   unsigned int handFlexMedian = medianFilter(handFlex),
+                handExtendMedian = medianFilter(handExtend),
+                wristRotationMedian = medianFilter(wristRotation);
+
+   handFlexMap = mapValues(handFlexMedian);
+   handExtendMap = mapValues(handExtendMedian);
+   wristMap = mapValues(wristRotationMedian);
+   
+   moveServos();
   }
   
 }
@@ -117,9 +121,14 @@ boolean cycleCheck(unsigned long *lastMillis, unsigned int cycle)
  * Samples the data from each EMG channel
  */
 void sampleData(){
-  handFlex = analogRead(1);
-  handExtend = analogRead(2);
-  wristRotation = analogRead(0);
+  
+    handFlex[dataIndex] = analogRead(1);
+    handExtend[dataIndex] = analogRead(2);
+    wristRotation[dataIndex] = analogRead(0);
+    dataIndex++;
+    if(dataIndex > 4){
+      dataIndex = 0;
+    }
 }
 
 /**
@@ -133,6 +142,28 @@ void moveServos(){
   fifthPhalange.write(handFlexMap);
 }
 
+
+/**
+ * Median filters data
+ */
+ unsigned int medianFilter(unsigned int data[]){
+
+// selection sort that stops after the middle index is sorted
+// expects an input array of 5  
+  int i, j, minIndex, tmp;    
+    for (i = 0; i < 3; i++) {
+          minIndex = i;
+          for (j = i + 1; j < 5; j++)
+                if (data[j] < data[minIndex])
+                      minIndex = j;
+          if (minIndex != i) {
+                tmp = data[i];
+                data[i] = data[minIndex];
+                data[minIndex] = tmp;
+          }
+    }
+  return data[i];
+ }
 
 /**
    Checks amplitude of input signal and records maximum and minimum values
