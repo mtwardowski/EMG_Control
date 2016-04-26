@@ -58,6 +58,11 @@ const unsigned int SERVO_INTERVAL = 200;
  */
  unsigned long lastSampleTime = 0,
                lastServoUpdateTime = 0;
+
+/**
+ * Hand State
+ */
+ boolean isHandOpen = false;
               
 void setup() {
   // initialize serial communication with computer:
@@ -68,6 +73,7 @@ void setup() {
   fourthPhalange.attach(3);
   fifthPhalange.attach(2);
   wrist.attach(7);
+  openHand();
 }
 
 void loop() {
@@ -98,8 +104,11 @@ void loop() {
      handFlexMap = mapValues(handFlexMedian);
      //handExtendMap = mapValues(handExtendMedian);
      //wristMap = mapValues(wristRotationMedian);
-     
-     moveServos();
+     if(isHandOpen && handFlexMedian > 200){
+        closeHand();
+     } else if(!isHandOpen & handFlexMedian < 50){
+        openHand();
+     }
   }
   
 }
@@ -124,30 +133,54 @@ void sampleData(){
     handFlex[dataIndex] = analogRead(1);
     //handExtend[dataIndex] = analogRead(2);
     //wristRotation[dataIndex] = analogRead(0);
+    /*
     Serial.println(dataIndex);
     Serial.print("Analog Read: ");
     Serial.println(handFlex[dataIndex]);
+    */
     dataIndex++;
     if(dataIndex > 4){
       dataIndex = 0;
     }
-    Serial.print("Data: ");
+    /*Serial.print("Data: ");
     for(int i = 0; i < 5; i++){
       Serial.print(handFlex[i]);
       Serial.print(" ");
     }
     Serial.println("----");
+    */
 }
 
 /**
  * Updates the servo position
  */
-void moveServos(){
-  firstPhalange.write(handFlexMap);
-  secondPhalange.write(handFlexMap);
-  thirdPhalange.write(handFlexMap);
-  fourthPhalange.write(handFlexMap);
-  fifthPhalange.write(handFlexMap);
+void closeHand(){
+  Serial.println();
+  Serial.println("Close Hand");
+  Serial.println();
+  firstPhalange.write(0);
+  secondPhalange.write(0);
+  thirdPhalange.write(0);
+  fourthPhalange.write(0);
+  fifthPhalange.write(0);
+
+  isHandOpen = false;
+}
+
+/**
+ * Updates the servo position
+ */
+void openHand(){
+  Serial.println();
+  Serial.println("Open Hand");
+  Serial.println();
+  firstPhalange.write(180);
+  secondPhalange.write(180);
+  thirdPhalange.write(180);
+  fourthPhalange.write(180);
+  fifthPhalange.write(180);
+
+  isHandOpen = true;
 }
 
 
@@ -174,15 +207,16 @@ void moveServos(){
           dataTemp[4 - i] = dataTemp[maxIndex];
           dataTemp[maxIndex] = tmp;
     }
-  Serial.println("----");
+  //Serial.println("----");
   Serial.print("Median Filter: ");
   Serial.println(dataTemp[2]);
-   for(int i = 0; i < 5; i++){
+   /*for(int i = 0; i < 5; i++){
       Serial.print(dataTemp[i]);
       Serial.print(" ");
     }
     Serial.println("");
     Serial.println("");
+    */
   return dataTemp[2];
  }
 
