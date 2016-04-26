@@ -34,8 +34,8 @@ unsigned int handFlexMax = 0,
  * Arrays for holding data
  */
 unsigned int handFlex[5],
-               handExtend[5],
-               wristRotation[5];
+             handExtend[5],
+             wristRotation[5];
 
 /**
  * data index
@@ -91,15 +91,15 @@ void loop() {
   */
   
   if(cycleCheck(&lastServoUpdateTime, SERVO_INTERVAL)){
-   unsigned int handFlexMedian = medianFilter(handFlex),
-                handExtendMedian = medianFilter(handExtend),
-                wristRotationMedian = medianFilter(wristRotation);
-
-   handFlexMap = mapValues(handFlexMedian);
-   handExtendMap = mapValues(handExtendMedian);
-   wristMap = mapValues(wristRotationMedian);
-   
-   moveServos();
+     unsigned int handFlexMedian = medianFilter(handFlex);
+                  //handExtendMedian = medianFilter(handExtend),
+                 // wristRotationMedian = medianFilter(wristRotation);
+    
+     handFlexMap = mapValues(handFlexMedian);
+     //handExtendMap = mapValues(handExtendMedian);
+     //wristMap = mapValues(wristRotationMedian);
+     
+     moveServos();
   }
   
 }
@@ -121,14 +121,22 @@ boolean cycleCheck(unsigned long *lastMillis, unsigned int cycle)
  * Samples the data from each EMG channel
  */
 void sampleData(){
-  
     handFlex[dataIndex] = analogRead(1);
-    handExtend[dataIndex] = analogRead(2);
-    wristRotation[dataIndex] = analogRead(0);
+    //handExtend[dataIndex] = analogRead(2);
+    //wristRotation[dataIndex] = analogRead(0);
+    Serial.println(dataIndex);
+    Serial.print("Analog Read: ");
+    Serial.println(handFlex[dataIndex]);
     dataIndex++;
     if(dataIndex > 4){
       dataIndex = 0;
     }
+    Serial.print("Data: ");
+    for(int i = 0; i < 5; i++){
+      Serial.print(handFlex[i]);
+      Serial.print(" ");
+    }
+    Serial.println("----");
 }
 
 /**
@@ -148,21 +156,34 @@ void moveServos(){
  */
  unsigned int medianFilter(unsigned int data[]){
 
+ int dataTemp[5];
+ for(int k=0; k<5; k++){
+    dataTemp[k]=data[k];
+}
 // selection sort that stops after the middle index is sorted
 // expects an input array of 5  
-  int i, j, minIndex, tmp;    
+  int i, j, maxIndex, tmp;    
     for (i = 0; i < 3; i++) {
-          minIndex = i;
-          for (j = i + 1; j < 5; j++)
-                if (data[j] < data[minIndex])
-                      minIndex = j;
-          if (minIndex != i) {
-                tmp = data[i];
-                data[i] = data[minIndex];
-                data[minIndex] = tmp;
+          maxIndex = 0;
+          for (j = 0; j < 5 - i; j++){
+                if (dataTemp[j] > dataTemp[maxIndex]){
+                      maxIndex = j;
+                }
           }
+          tmp = dataTemp[4 - i];
+          dataTemp[4 - i] = dataTemp[maxIndex];
+          dataTemp[maxIndex] = tmp;
     }
-  return data[i];
+  Serial.println("----");
+  Serial.print("Median Filter: ");
+  Serial.println(dataTemp[2]);
+   for(int i = 0; i < 5; i++){
+      Serial.print(dataTemp[i]);
+      Serial.print(" ");
+    }
+    Serial.println("");
+    Serial.println("");
+  return dataTemp[2];
  }
 
 /**
