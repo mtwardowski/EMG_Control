@@ -60,9 +60,10 @@ const unsigned int SERVO_INTERVAL = 200;
                lastServoUpdateTime = 0;
 
 /**
- * Hand State
+ * Hand State and mode
  */
- boolean isHandOpen = false;
+ boolean isHandOpen = false,
+         isToolGripMode = false;
               
 void setup() {
   // initialize serial communication with computer:
@@ -81,32 +82,31 @@ void loop() {
   if(cycleCheck(&lastSampleTime, SAMPLE_PERIOD)){
     sampleData();
   }
-
-  /*
-  checkAmplitude(handFlex, handFlexMax, handFlexMin);
-  checkAmplitude(handExtend, handExtendMax, handExtendMin);
-  checkAmplitude(wristRotation, wristMax, wristMin);
-
-  handFlexPeak = peakToPeak(handFlexMax, handFlexMin);
-  handExtendPeak = peakToPeak( handExtendMax, handExtendMin);
-  wristPeak = peakToPeak(wristMax, wristMin);
-
-  handFlexMap = mapValues(handFlexPeak);
-  handExtendMap = mapValues(handExtendPeak);
-  wristMap = mapValues(wristPeak);
-  */
   
   if(cycleCheck(&lastServoUpdateTime, SERVO_INTERVAL)){
-     unsigned int handFlexMedian = medianFilter(handFlex);
-                  //handExtendMedian = medianFilter(handExtend),
-                 // wristRotationMedian = medianFilter(wristRotation);
+     unsigned int handFlexMedian = medianFilter(handFlex),
+                  handExtendMedian = medianFilter(handExtend);
+                  // wristRotationMedian = medianFilter(wristRotation);
     
      handFlexMap = mapValues(handFlexMedian);
-     //handExtendMap = mapValues(handExtendMedian);
+     handExtendMap = mapValues(handExtendMedian);
      //wristMap = mapValues(wristRotationMedian);
-     if(isHandOpen && handFlexMedian > 200){
+     
+     if(handFlexMedian > 200 && handExtendMedian > 200){
+        isToolGripMode = true;
+        Serial.print("Switch Grip Mode");
+     }
+     if(isToolGripMode){
+        if(isHandOpen && handFlexMedian > 200 && handExtendMedian < 50){
+            closeToolHand();
+        }else if(!isHandOpen && handFlexMedian > 200 && handExtendMedian < 50){
+            closeIndexFinger();
+        }else if(!isHandOpen && handExtendMedian > 200 && handFlexMedian < 50){
+            openIndexFinger();
+        }
+     }else if(isHandOpen && handFlexMedian > 200 && handExtendMedian < 50){
         closeHand();
-     } else if(!isHandOpen & handFlexMedian < 50){
+     }else if(!isHandOpen && handExtendMedian > 200 && handFlexMedian < 50){
         openHand();
      }
   }
@@ -131,13 +131,15 @@ boolean cycleCheck(unsigned long *lastMillis, unsigned int cycle)
  */
 void sampleData(){
     handFlex[dataIndex] = analogRead(1);
-    //handExtend[dataIndex] = analogRead(2);
+    handExtend[dataIndex] = analogRead(2);
     //wristRotation[dataIndex] = analogRead(0);
-    /*
+    
     Serial.println(dataIndex);
-    Serial.print("Analog Read: ");
+    Serial.print("Flex Analog Read: ");
     Serial.println(handFlex[dataIndex]);
-    */
+    Serial.print("Flex Analog Read: ");
+    Serial.println(handExtend[dataIndex]);
+    
     dataIndex++;
     if(dataIndex > 4){
       dataIndex = 0;
@@ -165,6 +167,42 @@ void closeHand(){
   fifthPhalange.write(0);
 
   isHandOpen = false;
+}
+
+/**
+ * Updates the servo position
+ */
+void closeToolHand(){
+  Serial.println();
+  Serial.println("Close Tool Hand");
+  Serial.println();
+  firstPhalange.write(180);
+  secondPhalange.write(0);
+  thirdPhalange.write(0);
+  fourthPhalange.write(0);
+  fifthPhalange.write(0);
+
+  isHandOpen = false;
+}
+
+/**
+ * Updates the servo position
+ */
+void closeIndexFinger(){
+  Serial.println();
+  Serial.println("Close Index Finger");
+  Serial.println();
+  firstPhalange.write(0);
+}
+
+/**
+ * Updates the servo position
+ */
+void openIndexFinger(){
+  Serial.println();
+  Serial.println("Open Index Finger");
+  Serial.println();
+  firstPhalange.write(180);
 }
 
 /**
@@ -219,31 +257,6 @@ void openHand(){
     */
   return dataTemp[2];
  }
-
-/**
-   Checks amplitude of input signal and records maximum and minimum values
-*/
-void checkAmplitude(unsigned int value, unsigned int &maxValue, unsigned int &minValue) {
-  if (value < 1024)  // toss out spurious readings
-  {
-    if (value > maxValue)
-    {
-      maxValue = value;  // save just the max levels
-    }
-    else if (value < minValue)
-    {
-      minValue = value;  // save just the min levels
-    }
-  }
-}
-
-/**
-   Finds the Peak to Peak voltage
-*/
-unsigned int peakToPeak(unsigned int maxValue, unsigned int minValue) {
-  unsigned int range = maxValue - minValue;  // max - min = peak-peak amplitude
-  return range;
-}
 
 /**
    Checks amplitude of input signal and records maximum and minimum values
